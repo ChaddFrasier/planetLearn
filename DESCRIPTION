@@ -1,11 +1,11 @@
 Package: planetLearn
-Type: package
+Type: Package
 Title: Planetary Learning Package
 Version: 2020.05.18
 Encoding: UTF-8
 Author: Chadd M. Frasier
 Maintainer: Chadd M. Frasier <chaddfrasier20@gmail.com><cfrasier@contractor.usgs.gov>
-Description: This package is a general use R package to help create learning models using planetary data
+Description: This package is a general use R package to help create learning models using planetary data.
 License: GPL-3
 RoxygenNote: 7.1.0
 VignetteBuilder: knitr
