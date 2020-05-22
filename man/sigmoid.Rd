@@ -7,15 +7,29 @@
 sigmoid(x)
 }
 \arguments{
-\item{x}{the value to sigmoid}
+\item{x}{The object to apply sigmoid to.
+Types can be: Numeric, Double, Integer, Vector, Data Frame}
 }
 \value{
-the sigmoid version of the number given
+returns value is of type x
 }
 \description{
-sigmoid
+Calculate the sigmoid for data given by x
 }
 \examples{
----------
+# Numerical
+# ---------
+val <- 25.65487
+sigmoid(val)
+
+# Vector
+# ------
+vector <- c(9.6574, 13.52, 22.34)
+sigmoid(vector)
+
+# Data Frame
+# ----------
+df <- data.frame(column_1=c(9.6574, 3.52, 232.34), column_2=c(9.6574, 13.52, 22.43))
+sigmoid(df)
 
 }
