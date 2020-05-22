@@ -19,7 +19,7 @@ Calculate the sigmoid for data given by x
 \examples{
 # Numerical
 # ---------
-val <- 25.65487
+val <- 25.6548
 sigmoid(val)
 
 # Vector

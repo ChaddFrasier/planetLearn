@@ -91,7 +91,6 @@ minnaert <- function( phase, emission, incidence, k ){
 #'
 #' @param actual the real values
 #' @param predicted the values that were predicted
-#' @param n_observations number of elements in the vectors
 #'
 #' @return returns an error value between 0 and 1
 #' @export
@@ -99,41 +98,10 @@ minnaert <- function( phase, emission, incidence, k ){
 #' @examples
 #' 
 #' 
-mean.sq.error <- function( actual, predicted )
+mean_sq_error <- function( actual, predicted )
 {
   residual.vec <- (actual - predicted)
   return( colMeans(residual.vec * residual.vec) )
-}
-
-ppart <- function(x){
-  ifelse(x<0, 0, x)
-}
-
-soft <- function(x, l){
-  sign(x) * ppart(abs(x)-l)
-}
-
-prox <- function(x, l){
-  c(x[1], soft(x[-1], l))
-}
-
-wstep <- function(size){
-  prox(w.vec+size*d.vec, lambda*size)
-}
-
-mean.square.loss <- function(pred){
-  sum((-y.tilde * pred)^2)/length(pred)
-}
-
-cstep <- function(size){
-  mean(square.loss(X.int %*% wstep(size)))
-}
-
-subdiff.crit <- function(w,d){
-  ifelse(
-    w==0,
-    ppart(abs(d)-lambda),
-    abs(d-sign(w)*lambda))
 }
 
 

@@ -1,9 +1,3 @@
-#'
-#' File: LinearModelL1 
-#' 
-#' Desc This file contains a Lasso Regression Model writen in R
-#'
-
 source("R/utils.R")
 
 # (non-negative numeric scalar) = penalty

@@ -4,9 +4,11 @@
 \alias{minnaert}
 \title{minnaert}
 \usage{
-minnaert(emission, incidence, k)
+minnaert(phase, emission, incidence, k)
 }
 \arguments{
+\item{phase}{the phase angle of the observation}
+
 \item{emission}{the emission angle of the observation}
 
 \item{incidence}{the incidence angle of the observation}
@@ -20,11 +22,22 @@ returns minnaert prediction based on emission and incidence angles
 Uses Emission Angle and Incidence Angle to predict DN
 }
 \examples{
-# Numerical
+# Out of Bounds
 # ---------
-minnaert(12.345, 323.3425, .4)
+k <- as.double(0.5)
+phase <- as.double(27.51269913)
+emission <- as.double(25.73810005)
+incidence <- as.double(46.18210983)
 
-# Vector
-# ------
+minnaert(phase, emission, incidence, k)
+
+# Success
+# -------
+phase <- as.double(105.79740143)
+emission <- as.double(31.06315994)
+incidence <- as.double(76.24420929)
+k <- as.double(0.025)
+
+minnaert(phase, emission, incidence, k)
 
 }
