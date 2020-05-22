@@ -5,6 +5,9 @@
 # Session Data files
 .RData
 
+# Ignored instance files
+/inst
+
 # User-specific files
 .Ruserdata
 
