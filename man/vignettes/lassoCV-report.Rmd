@@ -1,0 +1,162 @@
+---
+title: "Lasso Regression Model with Cross-Validation"
+author: "Chadd Frasier"
+date: "5/18/2020"
+output: html_document
+---
+```{r setup, include=FALSE, echo=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+# TODO: removed unused libraries. 
+# init libraries
+library(glmnet)
+library(knitr)
+library(ggplot2)
+library(ggpubr)
+library(dplyr)
+library(tidyverse)
+library(GGally)
+library(corrplot)
+# document init
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+# configuration for all code blocks
+knitr::opts_chunk$set(out.width = "100%",
+                      text = element_text(size=5),
+                      axis.text.x = element_text(angle=90, hjust=1),
+                      fig.height = 3,
+                      memory.limit(20000000),
+                      setwd("D:/cfrasier/work/R"))
+```
+## Lasso Regression ( L1-Norm Regularization )
+## Using Cosines of Photometric Angles
+```{r, Block 1, echo=TRUE}
+# set column names for the data features and label column ( DN )
+col_names <- c("DN", "Phase", "Emission", "Incidence", "LEmission", "LIncidence", "Lat", "Long", "SunAz", "CraftAz")
+# Read Data in from text file and set column names
+data = read.table( "../../inst/extdata/band1unit7.dat", stringsAsFactors=FALSE, 
+                      header=FALSE, strip.white=TRUE, sep="", col.names=col_names)
+# convert to a matrix
+data <- as.data.frame(data)
+# filter out incidence angles greater than some number of degrees
+data <- data[data$Incidence <= 70,]
+
+# calculate the cosines of the emission, incidence, local emission, and local incidence
+data$Emission = cos(data$Emission)
+data$Incidence = cos(data$Incidence)
+data$LEmission = cos(data$LEmission)
+data$LIncidence = cos(data$LIncidence)
+
+# show the dataset
+knitr::kable( data[1:5,], caption = "LROC WAC Pixel Data ( band 1 unit 7 )" )
+```
+
+## Lasso Regression w/ Cross-Validation over Alpha Values
+Lasso Regression is an algorithm that focuses on preventing overfitting of data. The secret behind how it does this is the activation function it uses.L1-norm is an absolute value based function which can reach 0, completly ignoring the activation of that feature and removing its influence. 
+```{r, LassoReg ,fig.show='hold', echo=TRUE}
+# prep data
+y.vec <- as.double(data[,1])
+X.mat <- as.matrix(data[,-1])
+lambda_seq <- 10^seq(3, -3, by = -.125)
+colnames(X.mat) <- NULL
+
+# Splitting the data into test and train
+set.seed(150)
+# train with only a 3/4 of the total data
+train = sample( 1:nrow(X.mat), size = (nrow(X.mat) * 0.80) )
+test = (-train)
+
+# generate a vector of values from 1 to 0
+alpha_seq <- seq( 1, 0, by = -0.025 )
+
+# create a vector to store analysis of model
+alpha_error_vec <- rep(0, times=length(alpha_seq))
+r_sq_vec <- rep(0, times=length(alpha_seq))
+best_run <- data.frame( y.vec[test], rep(0, times=length( y.vec[test] ) ) )
+best_r_sq <- 0
+best_alpha <- 0
+best_model <- NULL
+
+# for each alpha value in the vector
+for ( index in 1:length(alpha_seq) )
+{
+  # run the 30 fold cross validation of lasso regression to select best lambda
+  cv_output <- cv.glmnet(X.mat[train,], y.vec[train], nfolds = 30, 
+                         alpha = alpha_seq[index], lambda = lambda_seq)
+
+  # identifying best lamda
+  best_lam <- cv_output$lambda.min
+  
+  # Rebuilding the model with best lamda value identified
+  lasso_best <- glmnet(X.mat[train,], y.vec[train], alpha = alpha_seq[index], lambda = best_lam)
+  
+  # calculate predictions
+  pred <- predict(lasso_best, s = best_lam, newx = X.mat[test,])
+  
+  # create the output data matrix and rename
+  final <- data.frame( y.vec[test], pred )
+  colnames(final) <- c("Actual", "Predicted")
+  
+  # calculate the R^2 of the function
+  RSS <- sum( (final$Predicted - final$Actual) ^ 2 )
+  TSS <- sum( (final$Predicted - mean(final$Actual)) ^ 2 ) 
+  R_SQ <- 1 - RSS/TSS
+  
+  if( R_SQ >= max(r_sq_vec) )
+  {
+    best_run <- final
+    best_model <- lasso_best
+    best_r_sq <- R_SQ
+    best_alpha <- alpha_seq[index]
+  }
+  
+  r_sq_vec[index] <- R_SQ
+  
+  # calculate error
+  lasso_RMSE <- sqrt(sum(final$Predicted - final$Actual)^2) / nrow(final)
+  lasso_MSE <- sum(final$Predicted - final$Actual)^2 / nrow(final)
+  
+  alpha_error_vec[index] <- lasso_MSE
+}
+# plot the best run we had during the cv for better speed as oposed to printing all runs
+actualData = data.frame( c( seq(1, nrow(best_run)) ), best_run$Actual)
+predictedData = data.frame( c( seq(1,nrow(best_run)) ) , best_run$Predicted)
+cols = c("Predictions", "Point")
+colnames(predictedData) = cols
+colnames(actualData) = cols
+
+# create and plot guesses vs actual values
+p2 <- ggplot() +
+  geom_point(data=actualData, aes(x = Predictions ,y = Point), color="red") +
+  geom_point(data=predictedData, aes(x = Predictions ,y = Point), color="blue") +
+  xlab("Observations") +
+  ylab("DN Value") +
+  labs(title = "Predicted vs. Actual",
+       subtitle = "Blue vs Red")
+  ylim(c(min(actualData),max(actualData))) 
+plot(p2)
+```
+
+## Results
+Here you can see the results of CV which include the best r_sq, the alpha value that gave that r_sq, and the chart of errors dependent on the alpha value
+```{r, echo=TRUE}
+  # display which variables are being used in the model
+  coef( best_model )
+  # print best r recieved from CV and the error over every alpha
+  best_r_sq
+  best_alpha
+```
+## Error of Predictions Over CV
+```{r, Line Plot}
+df <- data.frame(alpha_error_vec, alpha_seq)
+colnames(df) <- c("Alpha", "Error")
+
+ggplot() +
+  geom_line(data = df, aes(x=Alpha, y=Error), group=1, color="green") +
+  xlab("Alpha Values") +
+  ylab("Validation Error")
+```
+
+## Conclusion
+The best alpha to use for the Lasso Regression is 0. This indicates that to train better on this model we should be using a Ridge Regression. Having an alpha of 0 in Lasso forces no contraint on the bias matrix and does not limit feature usage in each prediction.
