@@ -6,7 +6,7 @@
 .RData
 
 # Ignored instance files
-/inst
+*.dat
 
 # User-specific files
 .Ruserdata
