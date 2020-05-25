@@ -35,8 +35,7 @@ knitr::opts_chunk$set(out.width = "100%",
 # set column names for the data features and label column ( DN )
 col_names <- c("DN", "Phase", "Emission", "Incidence", "LEmission", "LIncidence", "Lat", "Long", "SunAz", "CraftAz")
 # Read Data in from text file and set column names
-data = read.table( "../../inst/extdata/band1unit7.dat", stringsAsFactors=FALSE, 
-                      header=FALSE, strip.white=TRUE, sep="", col.names=col_names)
+data = data <- readr::read_delim("../../data-raw/band1unit7.dat", delim = " ", col_names = col_names, trim_ws = TRUE)
 # convert to a matrix
 data <- as.data.frame(data)
 # filter out incidence angles greater than some number of degrees

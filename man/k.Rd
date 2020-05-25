@@ -16,6 +16,8 @@ a value between 0 and 1
 k
 }
 \examples{
+alpha <- 29.32748
 
+k(alpha)
 
 }
