@@ -29,6 +29,28 @@ sigmoid <- function( x ) {
 }
 
 
+#' mean.sq.error
+#' 
+#' this function finds the MSE between two vectors
+#'
+#' @param actual vector of real labels
+#' @param predicted vector of predicted labels
+#'
+#' @return the MSE of the prediction
+#' @export
+#'
+#' @examples
+#' 
+MSE <- function( actual, predicted )
+{
+  if( length(actual) == length(predicted))
+  {
+    res.vec <- (predicted - actual)
+    return( sum(res.vec*res.vec) / length(res.vec))
+  }
+  else stop("Incorrect Dimensions: predicted and actual must have the same dimensions")
+}
+
 #' minnaert
 #' 
 #' Uses Emission Angle and Incidence Angle to predict DN
@@ -84,27 +106,6 @@ minnaert <- function( phase, emission, incidence, k ){
   return( cos(emission)^(k-1) * cos(incidence)^(k) )
 }
 
-
-#' mean.sq.error
-#'
-#' calculates the mean squared error of the prediction vector
-#'
-#' @param actual the real values
-#' @param predicted the values that were predicted
-#'
-#' @return returns an error value between 0 and 1
-#' @export
-#'
-#' @examples
-#' 
-#' 
-mean_sq_error <- function( actual, predicted )
-{
-  residual.vec <- (actual - predicted)
-  return( colMeans(residual.vec * residual.vec) )
-}
-
-
 #' gradientDecent
 #'
 #' @param X.mat scaled matrix of features
@@ -132,7 +133,7 @@ gradientDecent <- function( X.mat, y.vec, step.size, max.iterations )
   {
     # generated the weighted predictions
     prediction <- X.mat %*% w.vec
-    gradient <- colMeans(-as.numeric(y.vec) * X.mat / as.numeric(1+exp(y*(prediction))) )
+    gradient <- colMeans(-as.numeric(y.vec) * X.mat / as.numeric(1+exp(y.vec*(prediction))) )
     
     # calculate the new weight vector based on the pervious iterations
     w.vec = w.vec - step.size * gradient
@@ -141,47 +142,6 @@ gradientDecent <- function( X.mat, y.vec, step.size, max.iterations )
   }
   
   return (W.mat)
-}
-
-#' k.fold.cv
-#' 
-#' runs an algorithm with a fold vector to get get an array of errors for each fold number 1:k-folds
-#'
-#' @param X.mat scaled data matrix
-#' @param y.vec labels for the data
-#' @param compute.predictions a function to make the predictions
-#' @param fold.vec a vector of length nrow(X.mat) telling which fold each observation belongs to
-#'
-#' @return returns a vector of errors for each fold length(return.vec) = n.folds
-#' @export
-#'
-#' @examples
-#' 
-#' 
-k.fold.cv <- function(X.mat, y.vec, compute.predictions, fold.vec) {
-  
-  # create a vector to return that has as many spots as it does folds
-  error.vec <- vector( length = length( unique(fold.vec) ))
-  
-  # iterate over each fold; k total
-  for( fold in unique(fold.vec) )
-    {
-      # get the new test set
-      X.test <- X.mat[fold.vec == fold, ]
-      y.test <- y.vec[fold.vec == fold]
-      # get the new train set
-      X.train <- X.mat[fold_vec != fold, ]
-      y.train <- y.vec[fold_vec != fold]
-      
-      # call the prediction function passed to the function
-      pred.vec <- compute.predictions(X.train, y.train, X.test)
-      
-      # calculate the loss of the prediction function based on the average of the 
-      loss <- colMeans(y.test == as.vector(pred.vec))
-      
-      error.vec[fold] <- loss
-    }
-  return(error.vec)
 }
 
 # =================================================================
@@ -195,7 +155,9 @@ k.fold.cv <- function(X.mat, y.vec, compute.predictions, fold.vec) {
 #' @export
 #'
 #' @examples
+#' alpha <- 29.32748
 #' 
+#' k(alpha)
 #' 
 k <- function( alpha )
 {
