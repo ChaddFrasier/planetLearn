@@ -29,7 +29,7 @@ sigmoid <- function( x ) {
 }
 
 
-#' mean.sq.error
+#' MSE
 #' 
 #' this function finds the MSE between two vectors
 #'

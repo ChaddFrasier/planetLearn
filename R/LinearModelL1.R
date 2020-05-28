@@ -21,7 +21,12 @@ source("R/utils.R")
 #' 
 LinearModelL1 <- function( X.scaled.mat, y.vec, penalty, opt.thresh, initial.weight.vec, step.size )
 {
-  w.vec <- vector(length = (ncol(X.scaled.mat)+1) )
+  # fast initialization
+  # w.vec <- vector(length = (ncol(X.scaled.mat)+1) )
+  
+  # ** temporary **
+  w.vec <- rep(0, times= (ncol(X.scaled.mat)+1))
+  
   return(w.vec)
 }
 
@@ -45,19 +50,35 @@ LinearModelL1 <- function( X.scaled.mat, y.vec, penalty, opt.thresh, initial.wei
 LinearModelL1penalties <- function( X.mat, y.vec, penalty.vec, step.size )
 {
   if ( !is.vector(penalty.vec) ) stop("Penalty vector is not a vector, pass the data as a vector")
+  
   # init weight matrix
   weight.mat <- matrix(data=0, nrow = (ncol(X.mat)+1), ncol = length(penalty.vec))
-  X.scaled.mat <- X.mat
-  # this function should begin by scaling X.mat to obtain X.scaled.mat with each column mean=0 and sd=1
+  
+  w.vec <- vector(length = ncol(X.mat)+1)
+  initial.weight.vec <- vector(length = ncol(X.mat)+1)
+  
+  # attr(X.scaled.mat, "scaled:center") for the mean of each column
+  # attr(X.scaled.mat, "scaled:scale") for the std of each column
+  # scale the input data
+  X.scaled.mat <- scale(X.mat, center = TRUE, scale = TRUE)
   
   # loop over penalty values, calling LinearModelL1 to get the (scaled) optimal weight vector for each
   for ( penalty in 1:length(penalty.vec) )
   {
-    weight.mat[,penalty] <- LinearModelL1( X.scaled.mat = X.scaled.mat, y.vec = y.vec, penalty = penalty, step.size = step.size )
+    # get the weigth vector for each penalty value
+    w.vec <- LinearModelL1( X.scaled.mat = X.scaled.mat, y.vec = y.vec, penalty = penalty, opt.thresh = opt.thresh, initial.weight.vec = initial.weight.vec, step.size = step.size )
+    
+    # it should then convert the optimal weight vector (tilde w, tilde beta) back to the original scale, using the mean/sd of each column/feature.
+    w.tilda <- c(w.vec[1], (w.vec[-1] - attr(X.scaled.mat, "scaled:center") / attr(X.scaled.mat, "scaled:scale")) )
+    
+    # use warm restarts, use the optimal solution for the previous penalty value as the next initial.weight.vec
+    initial.weight.vec <- w.vec
+    
+    # store this penatly run in the final matrix
+    weight.mat[,penalty] <- w.tilda
   }
-  # it should then convert the optimal weight vector (tilde w, tilde beta) back to the original scale, using the mean/sd of each column/feature.
   
-  # use warm restarts, i.e. instead of starting the optimization from the 0 vector each time (slow), use the optimal solution for the previous penalty value as the next initial.weight.vec (faster)
+  
   return(weight.mat)
 }
 
