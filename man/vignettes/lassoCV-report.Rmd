@@ -62,7 +62,7 @@ colnames(X.mat) <- NULL
 
 # Splitting the data into test and train
 set.seed(150)
-# train with only a 3/4 of the total data
+# train with only a 80 % of the total data
 train = sample( 1:nrow(X.mat), size = (nrow(X.mat) * 0.80) )
 test = (-train)
 
