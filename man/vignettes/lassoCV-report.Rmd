@@ -26,26 +26,30 @@ knitr::opts_chunk$set(out.width = "100%",
                       text = element_text(size=5),
                       axis.text.x = element_text(angle=90, hjust=1),
                       fig.height = 3,
-                      memory.limit(20000000),
-                      setwd("D:/cfrasier/work/R"))
+                      memory.limit(20000000))
 ```
 ## Lasso Regression ( L1-Norm Regularization )
 ## Using Cosines of Photometric Angles
 ```{r, Block 1, echo=TRUE}
-# set column names for the data features and label column ( DN )
-col_names <- c("DN", "Phase", "Emission", "Incidence", "LEmission", "LIncidence", "Lat", "Long", "SunAz", "CraftAz")
-# Read Data in from text file and set column names
-data = data <- readr::read_delim("../../data-raw/band1unit7.dat", delim = " ", col_names = col_names, trim_ws = TRUE)
-# convert to a matrix
-data <- as.data.frame(data)
+load("../../data/lunarData.rda")
+
 # filter out incidence angles greater than some number of degrees
-data <- data[data$Incidence <= 70,]
+data <- lunarData[lunarData$Incidence <= 70,]
 
 # calculate the cosines of the emission, incidence, local emission, and local incidence
 data$Emission = cos(data$Emission)
 data$Incidence = cos(data$Incidence)
 data$LEmission = cos(data$LEmission)
 data$LIncidence = cos(data$LIncidence)
+
+# check for 0 variance
+sc <- scale(data)
+
+# filter out all fetures with 0 variance
+if( any(attr(sc[-1], "scaled:scale") == 0))
+{
+  data <- cbind(DN=data[,1], data[,which(attr(sc[-1], "scaled:scale") == 0)] )
+}
 
 # show the dataset
 knitr::kable( data[1:5,], caption = "LROC WAC Pixel Data ( band 1 unit 7 )" )
@@ -62,6 +66,7 @@ colnames(X.mat) <- NULL
 
 # Splitting the data into test and train
 set.seed(150)
+
 # train with only a 80 % of the total data
 train = sample( 1:nrow(X.mat), size = (nrow(X.mat) * 0.80) )
 test = (-train)
@@ -146,6 +151,17 @@ Here you can see the results of CV which include the best r_sq, the alpha value 
   best_r_sq
   best_alpha
 ```
+
+```{r, ResidualPlot }
+
+res <- residuals(best_model)
+
+plot(res)
+
+
+```
+
+
 ## Error of Predictions Over CV
 ```{r, Line Plot}
 df <- data.frame(alpha_error_vec, alpha_seq)
@@ -158,4 +174,4 @@ ggplot() +
 ```
 
 ## Conclusion
-The best alpha to use for the Lasso Regression is 0. This indicates that to train better on this model we should be using a Ridge Regression. Having an alpha of 0 in Lasso forces no contraint on the bias matrix and does not limit feature usage in each prediction.
+The best alpha to use for the Lasso Regression is 0. This indicates that to train better using this model we should be using a Ridge Regression. Having an alpha of 0 in Lasso forces no contraint on the bias matrix and does not limit feature usage in each prediction.

@@ -1,8 +1,8 @@
 source("R/utils.R")
 
-#' LinearModelL1
+#' LinearModelL2
 #' 
-#' minimizes the following cost function: 1/n ∑i=1^n L[w^T x_i + b, y_i] + penalty * ||w||_1
+#' minimizes the following cost function: 1/n ∑i=1^n L[w^T x_i + b, y_i] + penalty * ||w||^2_2
 #'
 #' @param X.scaled.mat the scaled training matrix [ n_observations : n_features ]
 #' @param y.vec the label vector for the data matrix [ n_observations : 1 ]
@@ -19,7 +19,7 @@ source("R/utils.R")
 #' getwd()
 #' 
 #' 
-LinearModelL1 <- function( X.scaled.mat, y.vec, penalty, opt.thresh, initial.weight.vec, step.size )
+LinearModelL2 <- function( X.scaled.mat, y.vec, penalty, opt.thresh, initial.weight.vec, step.size )
 {
   # fast initialization
   # w.vec <- vector(length = (ncol(X.scaled.mat)+1) )
@@ -30,7 +30,8 @@ LinearModelL1 <- function( X.scaled.mat, y.vec, penalty, opt.thresh, initial.wei
   return(w.vec)
 }
 
-#' LinearModelL1penalties
+
+#' LinearModelL2penalties
 #'
 #' train different models based on the different penalty values in the penalty_vec and create a matric of weights for all of the penalties
 #' W.mat (n_features+1 x n_penalties), weight matrix on original scale can be used to make
@@ -47,7 +48,7 @@ LinearModelL1 <- function( X.scaled.mat, y.vec, penalty, opt.thresh, initial.wei
 #' @examples
 #' 
 #' 
-LinearModelL1penalties <- function( X.mat, y.vec, penalty.vec, step.size )
+LinearModelL2penalties <- function( X.mat, y.vec, penalty.vec, step.size )
 {
   if ( !is.vector(penalty.vec) ) stop("Penalty vector is not a vector, pass the data as a vector")
   
@@ -60,15 +61,15 @@ LinearModelL1penalties <- function( X.mat, y.vec, penalty.vec, step.size )
   
   # scale the input data
   # Note:
-    # attr(X.scaled.mat, "scaled:center") returns the mean of each column
-    # attr(X.scaled.mat, "scaled:scale") returns the std of each column
+  # attr(X.scaled.mat, "scaled:center") returns the mean of each column
+  # attr(X.scaled.mat, "scaled:scale") returns the std of each column
   X.scaled.mat <- scale(X.mat, center = TRUE, scale = TRUE)
   
   # loop over penalty values, calling LinearModelL1 to get the (scaled) optimal weight vector for each
   for ( penalty in 1:length(penalty.vec) )
   {
     # get the weigth vector for each penalty value
-    w.vec <- LinearModelL1( X.scaled.mat = X.scaled.mat, y.vec = y.vec, penalty = penalty, opt.thresh = opt.thresh, initial.weight.vec = initial.weight.vec, step.size = step.size )
+    w.vec <- LinearModelL2( X.scaled.mat = X.scaled.mat, y.vec = y.vec, penalty = penalty, opt.thresh = opt.thresh, initial.weight.vec = initial.weight.vec, step.size = step.size )
     
     # it should then convert the optimal weight vector (tilde w, tilde beta) back to the original scale, using the mean/sd of each column/feature.
     w.tilda <- c(w.vec[1], (w.vec[-1] - attr(X.scaled.mat, "scaled:center") / attr(X.scaled.mat, "scaled:scale")) )
@@ -80,11 +81,10 @@ LinearModelL1penalties <- function( X.mat, y.vec, penalty.vec, step.size )
     weight.mat[,penalty] <- w.tilda
   }
   
-  
   return(weight.mat)
 }
 
-#' LinearModelL1CV
+#' LinearModelL2CV
 #' 
 #' perform a cross-validation using n.folds to select the nest training set for the data, this function trains a new model for each train/test split
 #' and then selects the best weight vector for the whole data set
@@ -109,13 +109,13 @@ LinearModelL1penalties <- function( X.mat, y.vec, penalty.vec, step.size )
 #' @examples
 #' getwd()
 #' 
-LinearModelL1CV <- function( X.mat, y.vec, fold.vec=NULL, n.folds=5, penalty.vec=NULL, step.size=.02 )
+LinearModelL2CV <- function( X.mat, y.vec, fold.vec=NULL, n.folds=5, penalty.vec=NULL, step.size=.02 )
 {
   # TODO: validate all input
   if( !is.matrix(X.mat) || !all(is.numeric(X.mat)) ) stop("X.mat must be a numeric matrix")
   
   if( !is.vector(y.vec) || !all(is.numeric(y.vec)) ) stop("y.vec must be a numeric array")
-
+  
   # check y.vec dimensions
   if( length(y.vec) != nrow(X.mat) ) stop("y.vec must contain the same number of elements found in ncol(X.mat)")
   
@@ -132,7 +132,7 @@ LinearModelL1CV <- function( X.mat, y.vec, fold.vec=NULL, n.folds=5, penalty.vec
   
   # check and correct if penalty.vec not given
   if( is.null(penalty.vec) || !is.vector(penalty.vec) ) penalty.vec <- 10^seq(0, -2, by = -.125)
-
+  
   # Init return data
   # n.penalties x n.folds
   mean.validation.loss.vec <- vector(length = length(penalty.vec))
@@ -147,7 +147,7 @@ LinearModelL1CV <- function( X.mat, y.vec, fold.vec=NULL, n.folds=5, penalty.vec
     y.train <- y.vec[is.train]
     
     # call the penalty training function to get that scaled weight vector for predictions
-    W.mat <- LinearModelL1penalties( X.mat = X.train, y.vec = y.train, penalty.vec = penalty.vec, step.size = step.size )
+    W.mat <- LinearModelL2penalties( X.mat = X.train, y.vec = y.train, penalty.vec = penalty.vec, step.size = step.size )
     
     # predict the test data dims = [ nrows(X.mat[train]) x n_penalties ] so we take the mean to get the average prediction for each observation on every penalty
     train.pred <- cbind(1, X.mat[is.train,]) %*% W.mat

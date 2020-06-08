@@ -13,21 +13,16 @@ Machine Learning is the fastest growing field of computer science and its applic
 
 ## Read the Data in R
 ```{r, Data Init}
-# set column names for the data features and label column ( DN )
-col_names <- c("DN", "Phase", "Emission", "Incidence", "LEmission", "LIncidence", "Lat", "Long", "SunAz", "CraftAz")
-# Read Data in from text file and set column names
-data <- read.table( "../../inst/extdata/band1unit7.dat", stringsAsFactors=FALSE, 
-                   header=FALSE, strip.white=TRUE, sep="", col.names=col_names)
-# convert to a matrix
-data <- as.data.frame(data)
+# load the data from the data folder
+load(file = "../../data/lunarData.rda")
 ```
 
 ## Isolate Labels and Features
 ```{r, Preping & Scaling }
-# isolate the labels
-y.vec <- data[,1]
-# isolate the features
-X.mat <- data[, -1]
+# isolate the data and labels
+y.vec <- as.numeric(lunarData[,1])
+X.mat <- as.matrix(lunarData[,-1])
+
 # show
 str(y.vec)
 str(X.mat)
