@@ -1,0 +1,186 @@
+---
+title: "Ridge Regression"
+author: "Chadd Frasier"
+output: html_document
+---
+
+```{r setup}
+library(knitr)
+library(planetLearn)
+library(glmnet)
+library(ggplot2)
+
+# document init
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+# configuration for all code blocks
+knitr::opts_chunk$set(out.width = "100%",
+                      text = element_text(size=5),
+                      axis.text.x = element_text(angle=90, hjust=1),
+                      fig.height = 3,
+                      memory.limit(20000000))
+```
+
+```{r, DataInit, fig.show='hold'}
+load("../../data/lunarData.rda")
+
+# filter out incidence angles greater than some number of degrees
+data <- lunarData[lunarData$Incidence <= 70,]
+
+# calculate the cosines of the emission, incidence, local emission, and local incidence
+data$Emission = cos(data$Emission)
+data$Incidence = cos(data$Incidence)
+data$LEmission = cos(data$LEmission)
+data$LIncidence = cos(data$LIncidence)
+
+# check for 0 variance
+sc <- scale(data)
+
+# filter out all fetures with 0 variance
+if( any(attr(sc[-1], "scaled:scale") == 0))
+{
+  data <- cbind(DN=data[,1], data[,which(attr(sc[-1], "scaled:scale") == 0)] )
+}
+
+# show the dataset
+knitr::kable( data[1:5,], caption = "LROC WAC Pixel Data ( band 1 unit 7 )" )
+```
+
+```{r, Isolate Train/Test set}
+# prep data
+y.vec <- as.double(data[,1])
+X.mat <- as.matrix(data[,-1])
+lambda_seq <- 10^seq(4, -4, by = -.15)
+colnames(X.mat) <- NULL
+
+# Splitting the data into test and train
+set.seed(150)
+# train with only a 80 % of the total data
+train = sample( 1:nrow(X.mat), size = (nrow(X.mat) * 0.80) )
+test = (-train)
+```
+## Train Error
+```{r, RunCV}
+cv_output <- cv.glmnet(X.mat[train,], y.vec[train], nfolds = 70, 
+                         alpha = 0, lambda = lambda_seq)
+plot(cv_output)
+```
+
+```{r, Predictions, fig.show='hold'}
+optimal.lambda <- cv_output$lambda.min
+fit <- cv_output$glmnet.fit
+
+y_predicted <- predict(fit, s = optimal.lambda, newx = X.mat[test,])
+
+# Sum of Squares Total and Error
+sst <- sum((y.vec[test] - mean(y.vec[test]))^2)
+sse <- sum((y_predicted - y.vec[test])^2)
+
+# R squared
+rsq <- 1 - sse / sst
+rsq
+```
+
+
+```{r, PredictionChart0, fig.show='hold'}
+# create the output data matrix and rename
+outputData <- data.frame( y.vec[test], y_predicted )
+colnames(outputData) <- c("Actual", "Predicted")
+# plot the best run we had during the cv for better speed as oposed to printing all runs
+actualData = data.frame( c( seq(1, nrow(outputData)) ), outputData$Actual)
+predictedData = data.frame( c( seq(1,nrow(outputData)) ) , outputData$Predicted)
+cols = c("Predictions", "Point")
+colnames(predictedData) = cols
+colnames(actualData) = cols
+
+# create and plot guesses vs actual values
+p2 <- ggplot() +
+  geom_point(data=actualData, aes(x = Predictions ,y = Point), color="red") +
+  geom_point(data=predictedData, aes(x = Predictions ,y = Point), color="blue") +
+  xlab("Observations") +
+  ylab("DN Value") +
+  labs(title = "Predicted vs. Actual",
+       subtitle = "Blue vs Red")
+  ylim(c(min(actualData),max(actualData))) 
+plot(p2)
+
+```
+
+## No Cosines 
+```{r, No Cosines, fig.show='hold'}
+# filter out incidence angles greater than some number of degrees
+data <- lunarData[lunarData$Incidence <= 70,]
+
+# check for 0 variance
+sc <- scale(data)
+
+# filter out all fetures with 0 variance
+if( any(attr(sc[-1], "scaled:scale") == 0))
+{
+  data <- cbind(DN=data[,1], data[,which(attr(sc[-1], "scaled:scale") == 0)] )
+}
+
+# show the dataset
+knitr::kable( data[1:5,], caption = "LROC WAC Pixel Data ( band 1 unit 7 )" )
+```
+
+```{r, Isolate Train/Test set 2}
+# prep data
+y.vec <- as.double(data[,1])
+X.mat <- as.matrix(data[,-1])
+lambda_seq <- 10^seq(4, -4, by = -.15)
+colnames(X.mat) <- NULL
+
+# Splitting the data into test and train
+set.seed(150)
+# train with only a 80 % of the total data
+train = sample( 1:nrow(X.mat), size = (nrow(X.mat) * 0.80) )
+test = (-train)
+```
+## Train Error
+```{r, RunCV NoCosine}
+cv_output <- cv.glmnet(X.mat[train,], y.vec[train], nfolds = 70, 
+                         alpha = 0, lambda = lambda_seq)
+plot(cv_output)
+```
+
+```{r, Predictions No Cosines, fig.show='hold'}
+optimal.lambda <- cv_output$lambda.min
+fit <- cv_output$glmnet.fit
+
+y_predicted <- predict(fit, s = optimal.lambda, newx = X.mat[test,])
+
+# Sum of Squares Total and Error
+sst <- sum((y.vec[test] - mean(y.vec[test]))^2)
+sse <- sum((y_predicted - y.vec[test])^2)
+
+# R squared
+rsq <- 1 - sse / sst
+rsq
+```
+
+```{r, PredictionChart, fig.show='hold'}
+# create the output data matrix and rename
+outputData <- data.frame( y.vec[test], y_predicted )
+colnames(outputData) <- c("Actual", "Predicted")
+# plot the best run we had during the cv for better speed as oposed to printing all runs
+actualData = data.frame( c( seq(1, nrow(outputData)) ), outputData$Actual)
+predictedData = data.frame( c( seq(1,nrow(outputData)) ) , outputData$Predicted)
+cols = c("Predictions", "Point")
+colnames(predictedData) = cols
+colnames(actualData) = cols
+
+# create and plot guesses vs actual values
+p2 <- ggplot() +
+  geom_point(data=actualData, aes(x = Predictions ,y = Point), color="red") +
+  geom_point(data=predictedData, aes(x = Predictions ,y = Point), color="blue") +
+  xlab("Observations") +
+  ylab("DN Value") +
+  labs(title = "Predicted vs. Actual",
+       subtitle = "Blue vs Red")
+  ylim(c(min(actualData),max(actualData))) 
+plot(p2)
+
+```
