@@ -36,11 +36,11 @@ load("../../data/lunarData.rda")
 # filter out incidence angles greater than some number of degrees
 data <- lunarData[lunarData$Incidence <= 70,]
 
-# calculate the cosines of the emission, incidence, local emission, and local incidence
-data$Emission = cos(data$Emission)
-data$Incidence = cos(data$Incidence)
-data$LEmission = cos(data$LEmission)
-data$LIncidence = cos(data$LIncidence)
+# # calculate the cosines of the emission, incidence, local emission, and local incidence
+# data$Emission = cos(data$Emission)
+# data$Incidence = cos(data$Incidence)
+# data$LEmission = cos(data$LEmission)
+# data$LIncidence = cos(data$LIncidence)
 
 # check for 0 variance
 sc <- scale(data)
@@ -72,7 +72,7 @@ train = sample( 1:nrow(X.mat), size = (nrow(X.mat) * 0.80) )
 test = (-train)
 
 # generate a vector of values from 1 to 0
-alpha_seq <- seq( 1, 0, by = -0.025 )
+alpha_seq <- seq( 1, 0, by = -0.0025 )
 
 # create a vector to store analysis of model
 alpha_error_vec <- rep(0, times=length(alpha_seq))

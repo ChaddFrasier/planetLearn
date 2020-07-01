@@ -1,0 +1,59 @@
+---
+title: "Neural Network Models"
+author: "Chadd Frasier"
+output: html_document
+---
+
+```{r setup}
+library(knitr)
+library(planetLearn)
+library(neuralnet)
+library(ggplot2)
+library(dplyr)
+
+# document init
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+# configuration for all code blocks
+knitr::opts_chunk$set(out.width = "100%",
+                      text = element_text(size=5),
+                      axis.text.x = element_text(angle=90, hjust=1),
+                      memory.limit(20000000),
+                      setwd("D:/cfrasier/work/R"))
+```
+## Neural Network
+Neural Networks are great at finding hidden relationships between the data in matrices as a whole but it is suseptable to overfitting when too many features are used. Yet we though this would be a viable means of training models for the fact that we are unsure of the exact linear realtionships between all the features used.
+
+## Read the Data in R
+```{r, Data Init}
+# load the data from the data folder
+load(file = "../../data/lunarData.rda")
+
+# filter out incidence angles greater than some number of degrees
+data <- lunarData[ lunarData$Incidence <= 70, ]
+
+# check for 0 variance
+sc <- scale(data[1:200000,-1])
+
+# Splitting the data into test and train
+set.seed(150)
+
+# train with only a 80 % of the total data
+train = sample( 1:nrow(sc), size = (nrow(sc) * 0.60) )
+test = (-train)
+
+trainNN <- cbind(DN=data[train,1], sc[train,])
+testNN <- cbind(DN=data[test,1], sc[test,])
+
+```
+
+# Train Model
+```{r, Training Step, fig.show='hold', echo=TRUE}
+# fit neural network
+NN <- neuralnet(DN ~ Phase + Emission + Incidence + LEmission + LIncidence + Lat + Long + SunAz + CraftAz, data=trainNN, hidden = c(12,6) , linear.output = TRUE )
+
+# plot neural network
+plot(NN)
+```

@@ -1,0 +1,82 @@
+---
+title: "Linear Models with L2 Regularization"
+author: "Chadd Frasier"
+date: "6/12/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, fig.show = 'hold', fig.height = 3)
+set.seed(1023)
+```
+
+## Linear Models L2 Regularization
+
+This is a Linear model using L2 reguarization that was writing in pure R using gradient descent of the mean squared loss. This model is also known as Ridge Regression. In this report I will use the data found in a single band to predict other value of that same band, while holding out test sets for cross validation.
+
+### Square Loss (Regression): $L(w) = ||Xw + {\beta}_n-y||^2_2$
+
+```{r InitializationStep}
+# Import libraries
+library(planetLearn)
+library(ggplot2)
+library(knitr)
+
+# load the data file from the compressed library
+load(file = "../../data/lunarData.rda")
+
+
+limit <- 300000
+limiter <- seq_len(limit)
+
+# Isolate the observations and features
+X.mat <- mapply(as.numeric, lunarData[limiter,-1])
+y.vec <- as.numeric(lunarData[limiter,1])
+
+X.test <- mapply(as.numeric, lunarData[limit:(limit+10000), -1])
+y.test <- as.numeric(lunarData[limit:(limit+10000), 1])
+
+n.folds <- 1000
+fold.vec <- sample(n.folds, replace = TRUE, size = nrow(X.mat))
+
+# get the penalty vector
+penalty.vec <- seq(10, 0.1, by = -0.1)
+
+# plot the data
+knitr::kable( head(lunarData) )
+```
+
+## Training
+
+```{r TrainingStep}
+# run the early stopping algorithm with a set max of iterations
+earlystopping.list <- LMSquareLossEarlyStoppingCV(X.mat, y.vec, fold.vec, 500L, step.size=.0000035 )
+
+# run without early stop
+#L2.list <- LMSquareLossL2CV(X.mat, y.vec, fold.vec, penalty.vec)
+
+earlystopping.predict <- earlystopping.list$predict(as.matrix(X.test) )
+#L2.predict <- L2.list$predict(X.test)
+baseline.predict <- mean(y.test)
+
+# L2 loss
+earlystopping.loss <- mean((earlystopping.predict - y.test) ^ 2)
+#L2.loss <- mean((L2.predict - y.test) ^ 2)
+baseline.loss <- mean((baseline.predict - y.test) ^ 2)
+```
+
+```{r Plot}
+plotDataV <- data.frame(ValidationLoss=earlystopping.list$mean.validation.loss.vec, Iterations=seq_len(length(earlystopping.list$mean.validation.loss.vec)))
+plotDataT <- data.frame(TrainLoss=earlystopping.list$mean.train.loss.vec, Iterations=seq_len(length(earlystopping.list$mean.train.loss.vec)))
+p2 <- ggplot() +
+  geom_line(data = plotDataT, aes(x=Iterations, y=TrainLoss), color="blue") +
+  geom_line(data=plotDataV, aes(y=ValidationLoss, x=Iterations), color="red") +
+  xlab("Iterations") +
+  ylab("Squared Loss") +
+  labs(title = "Loss over Iterations") 
+plot(p2)
+```
+
+## Conclusion
+
+Conclusion will go here
